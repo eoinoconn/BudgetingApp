@@ -1,49 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  runApp(MaterialApp(
-    home: CardFormWidget(),
+  WidgetsFlutterBinding.ensureInitialized();
+
+  runApp(const MaterialApp(
+    home: MyApp(),
   ));
 }
 
-class CardFormWidget extends StatefulWidget {
+class MyApp extends StatefulWidget {
+  const MyApp({Key? key}) : super(key: key);
   @override
-  _CardFormWidgetState createState() => _CardFormWidgetState();
+  _MyAppState createState() => _MyAppState();
 }
 
-class _CardFormWidgetState extends State<CardFormWidget>
-    with SingleTickerProviderStateMixin {
+class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  bool isFormVisible = false;
   String description = '';
   double cost = 0.0;
-  String currency = 'EUR';
-  String category = 'Food & Drink';
-  String location = 'Thailand';
-  DateTime date = DateTime.now();
+  String selectedCurrency = 'EUR';
+  String selectedCategory = 'Food & Drink';
+  String selectedLocation = 'Thailand';
+  DateTime selectedDate = DateTime.now();
   String notes = '';
 
-  bool isFormVisible = false;
-
-  late AnimationController _animationController;
-  late Animation<Offset> _offsetAnimation;
-
-  List<String> currencyOptions = ['EUR', 'USD', 'THB'];
-  List<String> categoryOptions = ['Food & Drink', 'Transport'];
-  List<String> locationOptions = ['Thailand', 'Cambodia'];
+  final List<String> currencyOptions = ['EUR', 'USD', 'THB'];
+  final List<String> categoryOptions = ['Food & Drink', 'Transport'];
+  final List<String> locationOptions = ['Thailand', 'Cambodia'];
 
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: Duration(milliseconds: 300),
       vsync: this,
+      duration: const Duration(milliseconds: 500),
     );
-    _offsetAnimation = Tween<Offset>(
-      begin: Offset(0, 1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    ));
   }
 
   @override
@@ -52,248 +45,229 @@ class _CardFormWidgetState extends State<CardFormWidget>
     super.dispose();
   }
 
-  void _showForm() {
+  void _toggleFormVisibility() {
     setState(() {
-      isFormVisible = true;
+      isFormVisible = !isFormVisible;
+      if (isFormVisible) {
+        _animationController.forward();
+      } else {
+        _animationController.reverse();
+      }
     });
-    _animationController.forward();
   }
 
-  void _hideForm() {
-    _animationController.reverse().then((value) {
-      setState(() {
-        isFormVisible = false;
-      });
-    });
+  void _submitForm() {
+    if (cost < 0 || cost > 1000000000) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Invalid Cost'),
+            content: const Text('Please enter a valid cost.'),
+            actions: [
+              TextButton(
+                child: const Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      // Perform the desired action with the form data
+      // For example, you can save the data to a database or send it to an API
+      // Here, we simply print the form data
+      print('Description: $description');
+      print('Cost: $cost');
+      print('Currency: $selectedCurrency');
+      print('Category: $selectedCategory');
+      print('Location: $selectedLocation');
+      print('Date: $selectedDate');
+      print('Notes: $notes');
+
+      // display a green tick animation for 1 second
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 1),
+          content: Icon(Icons.check),
+        ),
+      );
+
+      // Close the form
+      _toggleFormVisibility();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Expense Tracker'),
+        title: const Text('Expense App'),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: isFormVisible ? null : _showForm,
-        child: Icon(Icons.add),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomAppBar(
-        shape: CircularNotchedRectangle(),
-        child: Container(
-          height: 48.0,
-          color: Colors.blue,
-        ),
-      ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Visibility(
-              visible: isFormVisible,
-              child: SlideTransition(
-                position: _offsetAnimation,
-                child: Card(
-                  elevation: 4.0,
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            IconButton(
-                              icon: Icon(Icons.close),
-                              onPressed: _hideForm,
-                            ),
-                          ],
-                        ),
-                        Text(
-                          'Add Expense',
-                          style: TextStyle(
-                            fontSize: 18.0,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 16.0),
-                        TextField(
-                          decoration: InputDecoration(
-                            labelText: 'Description',
-                          ),
-                          onChanged: (value) {
-                            setState(() {
-                              description = value;
-                            });
-                          },
-                        ),
-                        SizedBox(height: 16.0),
-                        TextField(
-                          decoration: InputDecoration(
-                            labelText: 'Cost',
-                          ),
-                          keyboardType:
-                              TextInputType.numberWithOptions(decimal: true),
-                          onChanged: (value) {
-                            setState(() {
-                              cost = double.tryParse(value) ?? 0.0;
-                            });
-                          },
-                        ),
-                        SizedBox(height: 16.0),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                decoration: InputDecoration(
-                                  labelText: 'Currency',
-                                ),
-                                value: currency,
-                                items: currencyOptions.map((String value) {
-                                  return DropdownMenuItem<String>(
-                                    value: value,
-                                    child: Text(value),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  setState(() {
-                                    currency = value!;
-                                  });
-                                },
-                              ),
-                            ),
-                            SizedBox(width: 16.0),
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                decoration: InputDecoration(
-                                  labelText: 'Category',
-                                ),
-                                value: category,
-                                items: categoryOptions.map((String value) {
-                                  return DropdownMenuItem<String>(
-                                    value: value,
-                                    child: Text(value),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  setState(() {
-                                    category = value!;
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 16.0),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                decoration: InputDecoration(
-                                  labelText: 'Location',
-                                ),
-                                value: location,
-                                items: locationOptions.map((String value) {
-                                  return DropdownMenuItem<String>(
-                                    value: value,
-                                    child: Text(value),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  setState(() {
-                                    location = value!;
-                                  });
-                                },
-                              ),
-                            ),
-                            SizedBox(width: 16.0),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () async {
-                                  final DateTime? selectedDate =
-                                      await showDatePicker(
-                                    context: context,
-                                    initialDate: date,
-                                    firstDate: DateTime(2000),
-                                    lastDate: DateTime(2100),
-                                  );
-                                  if (selectedDate != null) {
-                                    setState(() {
-                                      date = selectedDate;
-                                    });
-                                  }
-                                },
-                                child: InputDecorator(
-                                  decoration: InputDecoration(
-                                    labelText: 'Date',
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.calendar_today),
-                                      SizedBox(width: 8.0),
-                                      Text(date.toString()),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 16.0),
-                        TextField(
-                          decoration: InputDecoration(
-                            labelText: 'Notes',
-                          ),
-                          maxLines: 3,
-                          onChanged: (value) {
-                            setState(() {
-                              notes = value;
-                            });
-                          },
-                        ),
-                        SizedBox(height: 16.0),
-                        ElevatedButton(
-                          child: Text('Submit'),
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  title: Text('Card Information'),
-                                  content: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text('Description: $description'),
-                                      Text('Cost: $cost'),
-                                      Text('Currency: $currency'),
-                                      Text('Category: $category'),
-                                      Text('Location: $location'),
-                                      Text('Date: ${date.toLocal()}'),
-                                      Text('Notes: $notes'),
-                                    ],
-                                  ),
-                                  actions: [
-                                    ElevatedButton(
-                                      child: Text('OK'),
-                                      onPressed: () {
-                                        Navigator.of(context).pop();
-                                      },
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ],
+      body: Center(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 500),
+          height: isFormVisible ? MediaQuery.of(context).size.height * 0.8 : 0,
+          padding: const EdgeInsets.all(16.0),
+          child: Card(
+            elevation: 4.0,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ListView(
+                children: [
+                  const Text(
+                    'Add Expense',
+                    style: TextStyle(
+                      fontSize: 18.0,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'Description'),
+                    onChanged: (value) {
+                      setState(() {
+                        description = value;
+                      });
+                    },
+                  ),
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'Cost'),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    onChanged: (value) {
+                      setState(() {
+                        cost = double.tryParse(value) ?? 0.0;
+                      });
+                    },
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          decoration:
+                              const InputDecoration(labelText: 'Currency'),
+                          value: selectedCurrency,
+                          items: currencyOptions.map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedCurrency = value!;
+                            });
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          decoration:
+                              const InputDecoration(labelText: 'Category'),
+                          value: selectedCategory,
+                          items: categoryOptions.map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedCategory = value!;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16.0),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                              prefixIcon: Icon(Icons.location_on),
+                              labelText: 'Location'),
+                          value: selectedLocation,
+                          items: locationOptions.map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedLocation = value!;
+                            });
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () async {
+                            final DateTime? pickedDate = await showDatePicker(
+                              context: context,
+                              initialDate: selectedDate,
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime(2100),
+                            );
+                            if (pickedDate != null) {
+                              setState(() {
+                                selectedDate = pickedDate;
+                              });
+                            }
+                          },
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'Date',
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.calendar_today),
+                                const SizedBox(width: 8.0),
+                                Text(
+                                    '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'), //date, month and year only
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'Notes'),
+                    maxLines: 3,
+                    onChanged: (value) {
+                      setState(() {
+                        notes = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16.0),
+                  ElevatedButton(
+                    onPressed: _submitForm,
+                    child: const Text('Submit'),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.blue,
+        onPressed: _toggleFormVisibility,
+        child: const Icon(Icons.add),
+      ),
+      bottomNavigationBar: BottomAppBar(
+        color: Colors.blue,
+        shape: const CircularNotchedRectangle(),
+        child: Container(
+          height: 50.0,
         ),
       ),
     );
