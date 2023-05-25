@@ -1,21 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'setup.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  runApp(const MaterialApp(
-    home: MyApp(),
-  ));
+  // Check if setup has been performed
+  bool isSetupComplete = await checkSetupComplete();
+
+  runApp(MyApp(isSetupComplete: isSetupComplete));
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+class MyApp extends StatelessWidget {
+  final bool isSetupComplete;
+  const MyApp({Key? key, required this.isSetupComplete}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: isSetupComplete ? const MainApp() : SetupPage(),
+    );
+  }
+}
+
+class MainApp extends StatefulWidget {
+  const MainApp({Key? key}) : super(key: key);
+
   @override
   _MyAppState createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
+class _MyAppState extends State<MainApp> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   bool isFormVisible = false;
   String description = '';
