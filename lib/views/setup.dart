@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'main.dart';
+import '../main.dart';
+import '../authenticate.dart';
 
 Future<bool> checkSetupComplete() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -35,7 +36,13 @@ class SetupPage extends StatelessWidget {
   }
 
   void completeSetup(BuildContext context) async {
+    // Autheticate user
+
+    authenticate(context).then((client) {
+      print(client);
+    });
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool('setupComplete', true);
+    prefs.setBool('setupComplete', false);
   }
 }
