@@ -7,7 +7,7 @@ const List<String> scopes = <String>[
   'https://www.googleapis.com/auth/drive.file',
 ];
 
-GoogleSignIn _googleSignIn = GoogleSignIn(
+GoogleSignIn googleSignIn = GoogleSignIn(
   // Optional clientId
   clientId:
       //'217285692249-p20u6t798fnb08qi13t854kakdt3arjv.apps.googleusercontent.com', // Android
@@ -30,13 +30,13 @@ class _LoginViewState extends State<LoginView> {
   void initState() {
     super.initState();
 
-    _googleSignIn.onCurrentUserChanged
+    googleSignIn.onCurrentUserChanged
         .listen((GoogleSignInAccount? account) async {
       // In mobile, being authenticated means being authorized...
       bool isAuthorized = account != null;
       // However, in the web...
       if (kIsWeb && account != null) {
-        isAuthorized = await _googleSignIn.canAccessScopes(scopes);
+        isAuthorized = await googleSignIn.canAccessScopes(scopes);
       }
 
       setState(() {
@@ -52,7 +52,7 @@ class _LoginViewState extends State<LoginView> {
   // SDK, so this method can be considered mobile only.
   Future<void> _handleSignIn() async {
     try {
-      await _googleSignIn.signIn();
+      await googleSignIn.signIn();
     } catch (error) {
       print(error);
     }
@@ -65,13 +65,13 @@ class _LoginViewState extends State<LoginView> {
   //
   // On the web, this must be called from an user interaction (button click).
   Future<void> _handleAuthorizeScopes() async {
-    final bool isAuthorized = await _googleSignIn.requestScopes(scopes);
+    final bool isAuthorized = await googleSignIn.requestScopes(scopes);
     setState(() {
       _isAuthorized = isAuthorized;
     });
   }
 
-  Future<void> _handleSignOut() => _googleSignIn.disconnect();
+  Future<void> _handleSignOut() => googleSignIn.disconnect();
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +124,7 @@ class SetupView extends StatelessWidget {
     // Check if user is signed in and has correct scopes.
     // If so, navigate to TripSummary
     return FutureBuilder(
-        future: _googleSignIn.isSignedIn(),
+        future: googleSignIn.isSignedIn(),
         builder: (context, snapshot) {
           switch (snapshot.connectionState) {
             case ConnectionState.done:
